@@ -58,75 +58,45 @@ public class HashTagSearch implements ITwitterSearch{
 
     protected Set<String> parseUrlsFromTweets(String tweets) throws IOException {
         StopWatch stopWatch = new LoggingStopWatch("parseUrlsFromTweets main");
-//        StopWatch factoryStopWatch = new LoggingStopWatch("parseUrlsFromTweets factory");
         final Set<String> urls = new LinkedHashSet<String>();
         final JsonParser jsonParser = new JsonFactory().createJsonParser(tweets);
-//        factoryStopWatch.lap("lap 1");
-//        try {
           jsonParser.nextToken();
-//            if(log.isDebugEnabled()) log.debug("token 1: " + jsonParser.getCurrentName());
-//        factoryStopWatch.lap("lap 2");
             while (jsonParser.nextToken() != JsonToken.END_OBJECT) {
                 final String fieldName = jsonParser.getCurrentName();
-//                if(log.isDebugEnabled()) log.debug("token 2: " + jsonParser.getCurrentName());
                 jsonParser.nextToken();
-//                if(log.isDebugEnabled()) log.debug("token 2.5: " + jsonParser.getCurrentName());
-//                factoryStopWatch.lap("lap result");
                 if ("results".equals(fieldName )) {
                     while (jsonParser.nextToken() != JsonToken.END_ARRAY) {
-//                        if(log.isDebugEnabled()) log.debug("token 3: " + jsonParser.getCurrentName());
                         jsonParser.nextToken();
                         final String resultsField = jsonParser.getCurrentName();
-//                        if(log.isDebugEnabled()) log.debug("token 3.5: " + jsonParser.getCurrentName());
-//                        factoryStopWatch.lap("lap entities");
                         if ("entities".equals(resultsField)) {
                             while (jsonParser.nextToken() != JsonToken.END_ARRAY  ) {
-//                                if(log.isDebugEnabled()) log.debug("token 4: " + jsonParser.getCurrentName());
                                 jsonParser.nextToken();
                                 final String entityField = jsonParser.getCurrentName();
-//                                if(log.isDebugEnabled()) log.debug("token 4.5: " + jsonParser.getCurrentName());
-//                                factoryStopWatch.lap("lap urls");
                                 if ("urls".equals(entityField)) {
                                     while (jsonParser.nextToken() != JsonToken.END_OBJECT) {
                                         final String urlsField = jsonParser.getCurrentName();
-//                                        if(log.isDebugEnabled()) log.debug("token 5: " + jsonParser.getCurrentName());
                                        jsonParser.nextToken();
-//                                        if(log.isDebugEnabled()) log.debug("token 5.5: " + jsonParser.getCurrentName());
-//                                        factoryStopWatch.lap("lap url");
                                         if ("expanded_url".equals(urlsField)) {
                                             final String url = jsonParser.getText();
                                             if(!urls.contains(url)){
                                                 urls.add(url);
                                             }
-//                                            factoryStopWatch.lap("lap added: "+url);
 //                                            if(log.isDebugEnabled()) log.debug("added url: " + url);
                                         }
                                     }
-//                                } else {
-//                                    if(log.isDebugEnabled()) log.debug("Not urls: " + entityField);
                                 }
                             }
-//                        } else {
-//                            if(log.isDebugEnabled()) log.debug("Not entities: " + resultsField);
                         }
                     }
-//                }    else {
-//                    if(log.isDebugEnabled()) log.debug("Not results: " + fieldName);
                 }
-//                stopWatch.lap("ROOT Loop");
             }
             jsonParser.close();
             stopWatch.stop();
-//         factoryStopWatch.stop();
-
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
         return urls;
     }
 
 
-    private String findTweetsWithHashTag(final int page){
+    protected String findTweetsWithHashTag(final int page){
         final Map<String, String> parameters = new HashMap<String, String>(){{
             put("q", hashTag);
             put("rrp", ""+returnSize);
@@ -134,12 +104,9 @@ public class HashTagSearch implements ITwitterSearch{
             put("include_entities","true");
             put("page",""+page);
         }};
-        
-        // TODO: query rest api
-        
-        restTemplate.getForObject(TWITTER_URL, String.class, parameters);
-        
-        return null;
+        final String response = restTemplate.getForObject(TWITTER_URL, String.class, parameters);
+        if(log.isDebugEnabled()) log.debug("Json returned: " + response);
+        return response;
     } 
     
 

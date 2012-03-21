@@ -1,6 +1,8 @@
 package com.flurdy.twitter;
 
 import org.junit.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
@@ -14,6 +16,7 @@ import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
 public class HashTagSearchTest {
+    private Logger log = LoggerFactory.getLogger(this.getClass());
 
     private final Pattern httpMatcher = Pattern.compile("^https?:\\/\\/");
     private final Pattern nospaceMatcher = Pattern.compile("[^ ]");
@@ -37,11 +40,13 @@ public class HashTagSearchTest {
 
 
     @Test(timeout=1000)
-    @Ignore
+//    @Ignore
     public void retrieveUrlsFromMockedApi() throws IOException {
         RestTemplate restTemplate = mock(RestTemplate.class);
-        when(restTemplate.getForObject(anyString(), String.class, anyMap())).thenReturn(tweets);
-        Set<String> urls = new HashTagSearch(restTemplate,"football",5).searchForUrls();
+        when(restTemplate.getForObject(anyString(), any(Class.class), anyMap())).thenReturn(tweets);
+        HashTagSearch hashTagSearch = new HashTagSearch(restTemplate,"football",5);
+        String json = hashTagSearch.findTweetsWithHashTag(1);
+        Set<String> urls = hashTagSearch.parseUrlsFromTweets(json);
         assertEquals(5,urls.size());
         for( String url : urls ){
             assertTrue(startsWithHttp(url));
