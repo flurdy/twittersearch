@@ -37,7 +37,6 @@ public class HashTagSearch implements ITwitterSearch{
         return findUrls(1,new LinkedHashSet<String>());
     }
 
-    // TODO: handle if no more tweets found
     private Set<String> findUrls(int page,Set<String> existingUrls) throws IOException {
         final String tweets = findTweetsWithHashTag(page);
         if( parseNumberOfTweetsFound(tweets) > 0 ){
@@ -127,10 +126,10 @@ public class HashTagSearch implements ITwitterSearch{
     protected String findTweetsWithHashTag(final int page){
         final Map<String, String> parameters = new HashMap<String, String>(){{
             put("q", hashTag);
-//            put("rrp", ""+returnSize);
-//            put("result_type", "recent");
-//            put("include_entities","true");
-//            put("page",""+page);
+            put("rrp", ""+returnSize);
+            put("result_type", "recent");
+            put("include_entities","true");
+            put("page",""+page);
         }};
         final String response = restTemplate.getForObject(TWITTER_URL, String.class, parameters);
         if(log.isDebugEnabled()) log.debug("Json returned: " + response);
