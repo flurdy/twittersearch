@@ -18,14 +18,14 @@ public class HashTagIntegrationTest  {
 
     @Test(timeout=5000)
     @Ignore
-    public void find100UrlsFromTwitter() throws IOException {
+    public void find100UrlsFromTwitter()  {
         Set<String> tweets = new HashTagSearch("football",100).searchForUrls();
         assertEquals(100, tweets.size());
     }
 
     @Test(timeout=5000)
     @Ignore
-    public void checkTwitterUrlsAreHttp() throws IOException {
+    public void checkTwitterUrlsAreHttp()  {
         Set<String> tweets = new HashTagSearch("football",100).searchForUrls();
         assertEquals(100, tweets.size());
         for( String url : tweets ){

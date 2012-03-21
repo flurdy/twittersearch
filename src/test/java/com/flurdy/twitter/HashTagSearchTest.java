@@ -41,13 +41,13 @@ public class HashTagSearchTest {
 
 
     @Test(timeout=1000)
-    public void testTweetsFound() throws IOException {
+    public void testTweetsFound()  {
         int tweetCount = new HashTagSearch("ford",5).parseNumberOfTweetsFound(tweets);
         assertEquals(5,tweetCount);
     }
 
     @Test(timeout=1000)
-    public void testNoTweetsFound() throws IOException {
+    public void testNoTweetsFound()  {
         String noTweets = "{\n\"results\":[]}";
         int tweetCount = new HashTagSearch("basketball",5).parseNumberOfTweetsFound(noTweets);
         assertEquals(0,tweetCount);
@@ -57,7 +57,7 @@ public class HashTagSearchTest {
 
     @Test(timeout=1000)
 //    @Ignore
-    public void retrieveUrlsFromMockedApi() throws IOException {
+    public void retrieveUrlsFromMockedApi()  {
         RestTemplate restTemplate = mock(RestTemplate.class);
         when(restTemplate.getForObject(anyString(), any(Class.class), anyMap())).thenReturn(tweets);
         HashTagSearch hashTagSearch = new HashTagSearch(restTemplate,"football",5);
@@ -69,7 +69,7 @@ public class HashTagSearchTest {
     }
 
     @Test(timeout=1000)
-    public void testSimpleApiMock() throws IOException {
+    public void testSimpleApiMock()  {
         RestTemplate restTemplate = mock(RestTemplate.class);
         when(restTemplate.getForObject(anyString(), any(Class.class), anyMap())).thenReturn(tweets);
         HashTagSearch hashTagSearch = new HashTagSearch(restTemplate,"football",5);
@@ -83,7 +83,7 @@ public class HashTagSearchTest {
 
     @Test(timeout=1000)
 //    @Ignore
-    public void testUrlsAreInOrder() throws IOException {
+    public void testUrlsAreInOrder()  {
         String orderedTweets = "{\n\"results\":[\n" +
                 "{\"entities\":{\"urls\":[{\"expanded_url\":\"http://www.example.com\"}]}}," +
                 "{\"entities\":{\"urls\":[{\"expanded_url\":\"http://www.example.org\"}]}}," +
@@ -102,7 +102,7 @@ public class HashTagSearchTest {
      */
     @Test(timeout=1000)
 //    @Ignore
-    public void containsValidUrls() throws IOException {
+    public void containsValidUrls()  {
         Set<String> urls = new HashTagSearch("morning",3).parseUrlsFromTweets(tweets);
         for(String url : urls){
             assert startsWithHttp(url) : "Url does not start with http";
@@ -112,7 +112,7 @@ public class HashTagSearchTest {
 
     @Test(timeout=1000)
     @Ignore
-    public void catchInvalidUrls1() throws IOException {
+    public void catchInvalidUrls1()  {
         String tweets = "{\n\"results\":[\n" +
                 "{\"entities\":{\"urls\":[{\"expanded_url\":\"http://www.example.com\"}]}}," +
                 "{\"entities\":{\"urls\":[{\"expanded_url\":\"htp://www.example.org\"}]}}," +
@@ -129,7 +129,7 @@ public class HashTagSearchTest {
 
     @Test(timeout=1000)
     @Ignore
-    public void catchInvalidUrls2() throws IOException {
+    public void catchInvalidUrls2()  {
         String tweets = "{\n\"results\":[\n" +
                 "{\"entities\":{\"urls\":[{\"expanded_url\":\"http://www.example.com\"}]}}," +
                 "{\"entities\":{\"urls\":[{\"expanded_url\":\"www.example.org\"}]}}," +
@@ -145,7 +145,7 @@ public class HashTagSearchTest {
 
     @Test(timeout=1000)
 //    @Ignore
-    public void findUniqueUrls() throws IOException {
+    public void findUniqueUrls()  {
         String duplicateTweets = "{\n\"results\":[\n" +
             "{\"entities\":{\"urls\":[{\"expanded_url\":\"http://www.example.com\"}]}}," +
             "{\"entities\":{\"urls\":[{\"expanded_url\":\"http://www.example.org\"}]}}," +

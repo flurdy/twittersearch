@@ -11,6 +11,7 @@ import org.perf4j.LoggingStopWatch;
 import org.perf4j.StopWatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 public class HashTagSearch implements ITwitterSearch{
@@ -33,11 +34,11 @@ public class HashTagSearch implements ITwitterSearch{
         this.returnSize = returnSize;
     }
 
-    public Set<String> searchForUrls() throws IOException {
+    public Set<String> searchForUrls()  {
         return findUrls(1,new LinkedHashSet<String>());
     }
 
-    private Set<String> findUrls(int page,Set<String> existingUrls) throws IOException {
+    private Set<String> findUrls(int page,Set<String> existingUrls)   {
         final String tweets = findTweetsWithHashTag(page);
         if( parseNumberOfTweetsFound(tweets) > 0 ){
             final Set<String> newUrls = parseUrlsFromTweets(tweets);
@@ -60,11 +61,57 @@ public class HashTagSearch implements ITwitterSearch{
         return existingUrls;
     }
 
-    protected Set<String> parseUrlsFromTweets(String tweets) throws IOException {
-        StopWatch stopWatch = new LoggingStopWatch("parseUrlsFromTweets main");
-        final Set<String> urls = new LinkedHashSet<String>();
-        final JsonParser jsonParser = new JsonFactory().createJsonParser(tweets);
-          jsonParser.nextToken();
+    protected Set<String> parseUrlsFromTweets(String tweets) {
+        try{
+            StopWatch stopWatch = new LoggingStopWatch("parseUrlsFromTweets main");
+            final Set<String> urls = new LinkedHashSet<String>();
+            final JsonParser jsonParser = new JsonFactory().createJsonParser(tweets);
+              jsonParser.nextToken();
+                while (jsonParser.nextToken() != JsonToken.END_OBJECT) {
+                    final String fieldName = jsonParser.getCurrentName();
+                    jsonParser.nextToken();
+                    if ("results".equals(fieldName )) {
+                        while (jsonParser.nextToken() != JsonToken.END_ARRAY) {
+                            jsonParser.nextToken();
+                            final String resultsField = jsonParser.getCurrentName();
+                            if ("entities".equals(resultsField)) {
+                                while (jsonParser.nextToken() != JsonToken.END_ARRAY  ) {
+                                    jsonParser.nextToken();
+                                    final String entityField = jsonParser.getCurrentName();
+                                    if ("urls".equals(entityField)) {
+                                        while (jsonParser.nextToken() != JsonToken.END_OBJECT) {
+                                            final String urlsField = jsonParser.getCurrentName();
+                                           jsonParser.nextToken();
+                                            if ("expanded_url".equals(urlsField)) {
+                                                final String url = jsonParser.getText();
+                                                if(!urls.contains(url)){
+                                                    urls.add(url);
+                                                }
+    //                                            if(log.isDebugEnabled()) log.debug("added url: " + url);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                jsonParser.close();
+                stopWatch.stop();
+            return urls;
+        } catch (IOException exception){
+            log.error("JSON parsing failed",exception);
+            throw new RuntimeException("JSON parsing failed");
+        }
+    }
+
+
+    protected int parseNumberOfTweetsFound(String tweets) {
+        try{
+            StopWatch stopWatch = new LoggingStopWatch("parseNumberOfTweetsFound");
+            int tweetCount = 0;
+            final JsonParser jsonParser = new JsonFactory().createJsonParser(tweets);
+            jsonParser.nextToken();
             while (jsonParser.nextToken() != JsonToken.END_OBJECT) {
                 final String fieldName = jsonParser.getCurrentName();
                 jsonParser.nextToken();
@@ -73,54 +120,19 @@ public class HashTagSearch implements ITwitterSearch{
                         jsonParser.nextToken();
                         final String resultsField = jsonParser.getCurrentName();
                         if ("entities".equals(resultsField)) {
-                            while (jsonParser.nextToken() != JsonToken.END_ARRAY  ) {
-                                jsonParser.nextToken();
-                                final String entityField = jsonParser.getCurrentName();
-                                if ("urls".equals(entityField)) {
-                                    while (jsonParser.nextToken() != JsonToken.END_OBJECT) {
-                                        final String urlsField = jsonParser.getCurrentName();
-                                       jsonParser.nextToken();
-                                        if ("expanded_url".equals(urlsField)) {
-                                            final String url = jsonParser.getText();
-                                            if(!urls.contains(url)){
-                                                urls.add(url);
-                                            }
-//                                            if(log.isDebugEnabled()) log.debug("added url: " + url);
-                                        }
-                                    }
-                                }
-                            }
+                            tweetCount++;
                         }
                     }
                 }
             }
             jsonParser.close();
             stopWatch.stop();
-        return urls;
-    }
-
-
-    protected int parseNumberOfTweetsFound(String tweets) throws IOException {
-        StopWatch stopWatch = new LoggingStopWatch("parseNumberOfTweetsFound");
-        int tweetCount = 0;
-        final JsonParser jsonParser = new JsonFactory().createJsonParser(tweets);
-        jsonParser.nextToken();
-        while (jsonParser.nextToken() != JsonToken.END_OBJECT) {
-            final String fieldName = jsonParser.getCurrentName();
-            jsonParser.nextToken();
-            if ("results".equals(fieldName )) {
-                while (jsonParser.nextToken() != JsonToken.END_ARRAY) {
-                    jsonParser.nextToken();
-                    final String resultsField = jsonParser.getCurrentName();
-                    if ("entities".equals(resultsField)) {
-                        tweetCount++;
-                    }
-                }
-            }
+            return tweetCount;
+        } catch (IOException exception){
+            log.error("JSON parsing failed",exception);
+            throw new RuntimeException("JSON parsing failed");
         }
-        jsonParser.close();
-        stopWatch.stop();
-        return tweetCount;
+            
     }
 
     protected String findTweetsWithHashTag(final int page){
@@ -131,9 +143,14 @@ public class HashTagSearch implements ITwitterSearch{
             put("include_entities","true");
             put("page",""+page);
         }};
-        final String response = restTemplate.getForObject(TWITTER_URL, String.class, parameters);
-        if(log.isDebugEnabled()) log.debug("Json returned: " + response);
-        return response;
+        try{
+            final String response = restTemplate.getForObject(TWITTER_URL, String.class, parameters);
+            if(log.isDebugEnabled()) log.debug("Json returned: " + response);
+            return response;
+        } catch (HttpClientErrorException exception){
+            log.warn("Twitter request failed",exception);
+            throw new RuntimeException("Twitter API not accepting request:"+exception.getMessage());
+        }
     } 
     
 

@@ -11,8 +11,8 @@ public class TwitterSearch {
             Set<String> urlTweets = null;
             try {
                 urlTweets = hashTagSearch.searchForUrls();
-            } catch (IOException e) {
-                e.printStackTrace();
+            } catch (Exception exception) {
+                System.out.println("Unfortunately the application threw an error: "+exception.getMessage());
             }
             int i = 1;
             for(String url : urlTweets){
