@@ -21,17 +21,16 @@ public class HashTagIntegrationTest  {
 
     private final Pattern httpMatcher = Pattern.compile("^https?:\\/\\/");
     private Logger log = LoggerFactory.getLogger(this.getClass());
+    private final String TWITTER_URL ="http://search.twitter.com/search.json" +
+            "?q={q}&amp;rpp={rpp}&amp;result_type={result_type}&amp;include_entities={include_entities}";
 
-
-    @Test
+    @Test(timeout=5000)
 //    @Ignore
     public void testTwitterApi(){
-        String TWITTER_URL ="http://search.twitter.com/search.json" +
-                "?q={q}&amp;rrp={rrp}&amp;result_type={result_type}&amp;include_entities={include_entities}";
         RestTemplate restTemplate = new RestTemplate();
         final Map<String, String> parameters = new HashMap<String, String>(){{
             put("q", "#github");
-            put("rrp", ""+10);
+            put("rpp", ""+10);
             put("result_type", "recent");
             put("include_entities","true");
         }};
@@ -48,7 +47,37 @@ public class HashTagIntegrationTest  {
     }
 
     @Test(timeout=5000)
+    public void testTweetCountParser(){
+        RestTemplate restTemplate = new RestTemplate();
+        final Map<String, String> parameters = new HashMap<String, String>(){{
+            put("q", "#github");
+            put("rpp", ""+10);
+            put("result_type", "recent");
+            put("include_entities","true");
+        }};
+        try{
+            final String response = restTemplate.getForObject(TWITTER_URL, String.class, parameters);
+            if(log.isDebugEnabled()) log.debug("Json returned: " + response);
+            int tweetCount = new HashTagSearch("football",10).parseNumberOfTweetsFound(response);
+            assertEquals(10,tweetCount);
+        } catch (HttpClientErrorException exception){
+            log.warn(exception.getMessage());
+            log.warn(exception.getResponseBodyAsString());
+//            log.warn("Twitter request failed",exception);
+//            throw exception;
+            fail(exception.getMessage());
+        }
+    }
+
+    @Test(timeout=5000)
 //    @Ignore
+    public void findUrlsFromTwitter()  {
+        Set<String> tweets = new HashTagSearch("football",10).searchForUrls();
+        assertEquals(10, tweets.size());
+    }
+
+    @Test(timeout=5000)
+    @Ignore
     public void find100UrlsFromTwitter()  {
         Set<String> tweets = new HashTagSearch("football",100).searchForUrls();
         assertEquals(100, tweets.size());

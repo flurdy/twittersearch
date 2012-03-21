@@ -19,7 +19,7 @@ public class HashTagSearch implements ITwitterSearch{
     private Logger log = LoggerFactory.getLogger(this.getClass());
     
     protected static final String TWITTER_URL ="http://search.twitter.com/search.json" +
-            "?q={q}&amp;rrp={rrp}&amp;result_type={result_type}&amp;include_entities={include_entities}&amp;page={page}";
+            "?q={q}&amp;rpp={rpp}&amp;result_type={result_type}&amp;include_entities={include_entities}&amp;page={page}";
     private final String hashTag;
     private final int returnSize;
     private final RestTemplate restTemplate;
@@ -43,7 +43,9 @@ public class HashTagSearch implements ITwitterSearch{
         if( tweetCount > 0 ){
             if(log.isDebugEnabled()) log.debug("Tweet count: " + tweetCount);
             final Set<String> newUrls = parseUrlsFromTweets(tweets);
+            if(log.isDebugEnabled()) log.debug("Before existingUrls.size(): " + existingUrls.size());
             existingUrls = addNewUrls(newUrls, existingUrls);
+            if(log.isDebugEnabled()) log.debug("After existingUrls.size(): " + existingUrls.size());
             return existingUrls.size()<returnSize
                     ? findUrls(page++,existingUrls)
                     : existingUrls;   
@@ -64,7 +66,7 @@ public class HashTagSearch implements ITwitterSearch{
 
     protected Set<String> parseUrlsFromTweets(String tweets) {
         try{
-            StopWatch stopWatch = new LoggingStopWatch("parseUrlsFromTweets main");
+//            StopWatch stopWatch = new LoggingStopWatch("parseUrlsFromTweets main");
             final Set<String> urls = new LinkedHashSet<String>();
             final JsonParser jsonParser = new JsonFactory().createJsonParser(tweets);
               jsonParser.nextToken();
@@ -73,10 +75,10 @@ public class HashTagSearch implements ITwitterSearch{
                     jsonParser.nextToken();
                     if ("results".equals(fieldName )) {
                         while (jsonParser.nextToken() != JsonToken.END_ARRAY) {
-                            jsonParser.nextToken();
+//                            jsonParser.nextToken();
                             final String resultsField = jsonParser.getCurrentName();
                             if ("entities".equals(resultsField)) {
-                                while (jsonParser.nextToken() != JsonToken.END_ARRAY  ) {
+                                while (jsonParser.nextToken() != JsonToken.END_OBJECT  ) {
                                     jsonParser.nextToken();
                                     final String entityField = jsonParser.getCurrentName();
                                     if ("urls".equals(entityField)) {
@@ -91,14 +93,24 @@ public class HashTagSearch implements ITwitterSearch{
     //                                            if(log.isDebugEnabled()) log.debug("added url: " + url);
                                             }
                                         }
+                                    }  else {
+                                        if( jsonParser.getParsingContext().inArray() ){
+                                            jsonParser.skipChildren();
+                                        }
                                     }
+                                }
+                            } else {
+//                                log.debug("jsonParser.getCurrentName(): "+jsonParser.getCurrentName());
+//                                log.debug("jsonParser.getText(): "+jsonParser.getText());
+                                if( jsonParser.getParsingContext().inArray() ){
+                                    jsonParser.skipChildren();
                                 }
                             }
                         }
                     }
                 }
                 jsonParser.close();
-                stopWatch.stop();
+//                stopWatch.stop();
             return urls;
         } catch (IOException exception){
             log.error("JSON parsing failed",exception);
@@ -109,7 +121,6 @@ public class HashTagSearch implements ITwitterSearch{
 
     protected int parseNumberOfTweetsFound(String tweets) {
         try{
-            StopWatch stopWatch = new LoggingStopWatch("parseNumberOfTweetsFound");
             int tweetCount = 0;
             final JsonParser jsonParser = new JsonFactory().createJsonParser(tweets);
             jsonParser.nextToken();
@@ -118,28 +129,34 @@ public class HashTagSearch implements ITwitterSearch{
                 jsonParser.nextToken();
                 if ("results".equals(fieldName )) {
                     while (jsonParser.nextToken() != JsonToken.END_ARRAY) {
-                        jsonParser.nextToken();
                         final String resultsField = jsonParser.getCurrentName();
-                        if ("entities".equals(resultsField)) {
+                        if ("from_user".equals(resultsField)) {
                             tweetCount++;
+                            jsonParser.nextToken();
+                        } else {
+                            if( jsonParser.getParsingContext().inArray() ){
+                                jsonParser.skipChildren();
+                            }
                         }
+//                        log.debug("Count: "+ tweetCount);
                     }
+//                } else {
+//                    log.debug("jsonParser.getCurrentName(): "+jsonParser.getCurrentName());
+//                    log.debug("jsonParser.getText(): "+jsonParser.getText());
                 }
             }
             jsonParser.close();
-            stopWatch.stop();
             return tweetCount;
         } catch (IOException exception){
             log.error("JSON parsing failed",exception);
             throw new IllegalArgumentException("JSON parsing failed");
         }
-            
     }
 
     protected String findTweetsWithHashTag(final int page){
         final Map<String, String> parameters = new HashMap<String, String>(){{
             put("q", hashTag);
-            put("rrp", ""+returnSize);
+            put("rpp", ""+returnSize);
             put("result_type", "recent");
             put("include_entities","true");
             put("page",""+page);

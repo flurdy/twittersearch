@@ -22,11 +22,11 @@ public class HashTagSearchTest {
     private final Pattern nospaceMatcher = Pattern.compile("[^ ]");
 
     private final String tweets = "{\n\"results\":[\n" +
-            "{\"entities\":{\"urls\":[{\"expanded_url\":\"http://www.example.com\"}]}}," +
-            "{\"entities\":{\"urls\":[{\"expanded_url\":\"http://www.example.org\"}]}}," +
-            "{\"entities\":{\"urls\":[{\"expanded_url\":\"http://www.example.net\"}]}}," +
-            "{\"entities\":{\"urls\":[{\"expanded_url\":\"http://www.example.com/blah\"}]}}," +
-            "{\"entities\":{\"urls\":[{\"expanded_url\":\"http://www.example.com/foobar\"}]}}" +
+            "{\"from_user\":\"leonidas\",\"entities\":{\"urls\":[{\"expanded_url\":\"http://www.example.com\"}]}}," +
+            "{\"from_user\":\"zico\",\"entities\":{\"urls\":[{\"expanded_url\":\"http://www.example.org\"}]}}," +
+            "{\"from_user\":\"socrates\",\"entities\":{\"urls\":[{\"expanded_url\":\"http://www.example.net\"}]},\"created_at\":\"2012-12-24\"}," +
+            "{\"from_user\":\"rivelino\",\"entities\":{\"urls\":[{\"expanded_url\":\"http://www.example.com/blah\"}]}}," +
+            "{\"from_user\":\"garrincha\",\"entities\":{\"urls\":[{\"expanded_url\":\"http://www.example.com/foobar\"}]},\"created_at\":\"2012-12-24\"}" +
             "]}";
 
     @Test(timeout=1000)
@@ -48,7 +48,7 @@ public class HashTagSearchTest {
 
     @Test(timeout=1000)
     public void testNoTweetsFound()  {
-        String noTweets = "{\n\"results\":[]}";
+        String noTweets = "{\"results\":[]}";
         int tweetCount = new HashTagSearch("basketball",5).parseNumberOfTweetsFound(noTweets);
         assertEquals(0,tweetCount);
     }
