@@ -2,6 +2,7 @@ package com.flurdy.twitter;
 
 
 import org.junit.Test;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -11,9 +12,12 @@ import static org.junit.Assert.*;
 
 public class HashTagSearchTest {
 
+
+
     @Test
     public void find100Urls(){
-        Set<String> tweets = new HashTagSearch("football",100).searchForUrls();
+        RestTemplate restTemplate = mock(new RestTemplate());
+        Set<String> tweets = new HashTagSearch(restTemplate,"football",100).searchForUrls();
         assertEquals(100, tweets.size());
     }
 
