@@ -17,7 +17,7 @@ public class HashTagSearch implements ITwitterSearch{
 
     private Logger log = LoggerFactory.getLogger(this.getClass());
     
-    private static final String TWITTER_URL ="http://search.twitter.com";
+    private static final String TWITTER_URL ="http://search.twitter.com/search.json";
     private final String hashTag;
     private final int returnSize;
     private final RestTemplate restTemplate;
@@ -127,10 +127,10 @@ public class HashTagSearch implements ITwitterSearch{
     protected String findTweetsWithHashTag(final int page){
         final Map<String, String> parameters = new HashMap<String, String>(){{
             put("q", hashTag);
-            put("rrp", ""+returnSize);
-            put("result_type", "recent");
-            put("include_entities","true");
-            put("page",""+page);
+//            put("rrp", ""+returnSize);
+//            put("result_type", "recent");
+//            put("include_entities","true");
+//            put("page",""+page);
         }};
         final String response = restTemplate.getForObject(TWITTER_URL, String.class, parameters);
         if(log.isDebugEnabled()) log.debug("Json returned: " + response);

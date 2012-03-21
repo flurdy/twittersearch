@@ -1,0 +1,3 @@
+#!/bin/bash
+
+$JAVA_HOME/bin/java -cp "target/twitter-search.jar:target/dependencies/*" com.flurdy.twitter.TwitterSearch $1

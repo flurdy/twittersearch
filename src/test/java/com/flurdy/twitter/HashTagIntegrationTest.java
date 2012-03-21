@@ -16,14 +16,14 @@ public class HashTagIntegrationTest  {
 
     private final Pattern httpMatcher = Pattern.compile("^https?:\\/\\/");
 
-    @Test
+    @Test(timeout=5000)
     @Ignore
     public void find100UrlsFromTwitter() throws IOException {
         Set<String> tweets = new HashTagSearch("football",100).searchForUrls();
         assertEquals(100, tweets.size());
     }
 
-    @Test
+    @Test(timeout=5000)
     @Ignore
     public void checkTwitterUrlsAreHttp() throws IOException {
         Set<String> tweets = new HashTagSearch("football",100).searchForUrls();
