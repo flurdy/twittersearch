@@ -1,0 +1,11 @@
+A simple twitter search application.
+
+Build it with maven: mvn clean package
+
+Execute either via maven: mvn exec:java
+
+Or via maven test: mvn test
+
+Or by commandline: ./twitter-search myhashtag
+
+
