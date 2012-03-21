@@ -37,17 +37,22 @@ public class HashTagSearch implements ITwitterSearch{
         return findUrls(1,new LinkedHashSet<String>());
     }
 
-    // TODO handle if no more tweets found
+    // TODO: handle if no more tweets found
     private Set<String> findUrls(int page,Set<String> existingUrls) throws IOException {
         final String tweets = findTweetsWithHashTag(page);
-        final Set<String> newUrls = parseUrlsFromTweets(tweets);
-        existingUrls = addUrls(newUrls, existingUrls);
-        return existingUrls.size()<100 
-                ? findUrls(page++,existingUrls)
-                : existingUrls;
+        if( parseNumberOfTweetsFound(tweets) > 0 ){
+            final Set<String> newUrls = parseUrlsFromTweets(tweets);
+            existingUrls = addNewUrls(newUrls, existingUrls);
+            return existingUrls.size()<returnSize
+                    ? findUrls(page++,existingUrls)
+                    : existingUrls;   
+        } else {
+            return existingUrls;
+        }
     }
 
-    private Set<String> addUrls(Set<String> newUrls, Set<String> existingUrls) {
+
+    private Set<String> addNewUrls(Set<String> newUrls, Set<String> existingUrls) {
         for(String url : newUrls){
             if(!existingUrls.contains(url)){
                 existingUrls.add(url);
@@ -95,6 +100,29 @@ public class HashTagSearch implements ITwitterSearch{
         return urls;
     }
 
+
+    protected int parseNumberOfTweetsFound(String tweets) throws IOException {
+        StopWatch stopWatch = new LoggingStopWatch("parseNumberOfTweetsFound");
+        int tweetCount = 0;
+        final JsonParser jsonParser = new JsonFactory().createJsonParser(tweets);
+        jsonParser.nextToken();
+        while (jsonParser.nextToken() != JsonToken.END_OBJECT) {
+            final String fieldName = jsonParser.getCurrentName();
+            jsonParser.nextToken();
+            if ("results".equals(fieldName )) {
+                while (jsonParser.nextToken() != JsonToken.END_ARRAY) {
+                    jsonParser.nextToken();
+                    final String resultsField = jsonParser.getCurrentName();
+                    if ("entities".equals(resultsField)) {
+                        tweetCount++;
+                    }
+                }
+            }
+        }
+        jsonParser.close();
+        stopWatch.stop();
+        return tweetCount;
+    }
 
     protected String findTweetsWithHashTag(final int page){
         final Map<String, String> parameters = new HashMap<String, String>(){{

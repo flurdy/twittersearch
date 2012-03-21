@@ -39,9 +39,37 @@ public class HashTagSearchTest {
     }
 
 
+
+    @Test(timeout=1000)
+    public void testTweetsFound() throws IOException {
+        int tweetCount = new HashTagSearch("ford",5).parseNumberOfTweetsFound(tweets);
+        assertEquals(5,tweetCount);
+    }
+
+    @Test(timeout=1000)
+    public void testNoTweetsFound() throws IOException {
+        String noTweets = "{\n\"results\":[]}";
+        int tweetCount = new HashTagSearch("basketball",5).parseNumberOfTweetsFound(noTweets);
+        assertEquals(0,tweetCount);
+    }
+
+
+
     @Test(timeout=1000)
 //    @Ignore
     public void retrieveUrlsFromMockedApi() throws IOException {
+        RestTemplate restTemplate = mock(RestTemplate.class);
+        when(restTemplate.getForObject(anyString(), any(Class.class), anyMap())).thenReturn(tweets);
+        HashTagSearch hashTagSearch = new HashTagSearch(restTemplate,"football",5);
+        Set<String> urls = hashTagSearch.searchForUrls();
+        assertEquals(5,urls.size());
+        for( String url : urls ){
+            assertTrue(startsWithHttp(url));
+        }
+    }
+
+    @Test(timeout=1000)
+    public void testSimpleApiMock() throws IOException {
         RestTemplate restTemplate = mock(RestTemplate.class);
         when(restTemplate.getForObject(anyString(), any(Class.class), anyMap())).thenReturn(tweets);
         HashTagSearch hashTagSearch = new HashTagSearch(restTemplate,"football",5);
