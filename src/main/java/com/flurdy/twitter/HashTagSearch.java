@@ -18,20 +18,19 @@ public class HashTagSearch implements ITwitterSearch{
 
     private Logger log = LoggerFactory.getLogger(this.getClass());
     
-    private static final String TWITTER_URL ="http://search.twitter.com/search.json";
+    protected static final String TWITTER_URL ="http://search.twitter.com/search.json" +
+            "?q={q}&amp;rrp={rrp}&amp;result_type={result_type}&amp;include_entities={include_entities}&amp;page={page}";
     private final String hashTag;
     private final int returnSize;
     private final RestTemplate restTemplate;
 
-    public HashTagSearch(String hashTag,int returnSize) {
-        this.restTemplate = new RestTemplate();
-        this.hashTag = hashTag;
-        this.returnSize = returnSize;
-    }
     public HashTagSearch(RestTemplate restTemplate,String hashTag,int returnSize) {
         this.restTemplate = restTemplate;
-        this.hashTag = hashTag;
+        this.hashTag = hashTag.startsWith("#") ? hashTag : "#" + hashTag;
         this.returnSize = returnSize;
+    }
+    public HashTagSearch(String hashTag,int returnSize) {
+        this(new RestTemplate(),hashTag,returnSize);
     }
 
     public Set<String> searchForUrls()  {
@@ -40,7 +39,9 @@ public class HashTagSearch implements ITwitterSearch{
 
     private Set<String> findUrls(int page,Set<String> existingUrls)   {
         final String tweets = findTweetsWithHashTag(page);
-        if( parseNumberOfTweetsFound(tweets) > 0 ){
+        final int tweetCount = parseNumberOfTweetsFound(tweets);
+        if( tweetCount > 0 ){
+            if(log.isDebugEnabled()) log.debug("Tweet count: " + tweetCount);
             final Set<String> newUrls = parseUrlsFromTweets(tweets);
             existingUrls = addNewUrls(newUrls, existingUrls);
             return existingUrls.size()<returnSize
@@ -148,7 +149,7 @@ public class HashTagSearch implements ITwitterSearch{
             if(log.isDebugEnabled()) log.debug("Json returned: " + response);
             return response;
         } catch (HttpClientErrorException exception){
-            log.warn("Twitter request failed",exception);
+            log.warn("Twitter request failed: " + exception.getResponseBodyAsString());
             throw new IllegalStateException("Twitter API not accepting request:"+exception.getMessage());
         }
     } 
