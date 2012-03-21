@@ -12,7 +12,7 @@ public class TwitterSearch {
             try {
                 urlTweets = hashTagSearch.searchForUrls();
             } catch (Exception exception) {
-                System.out.println("Unfortunately the application threw an error: "+exception.getMessage());
+                System.err.println("Unfortunately the application threw an error: "+exception.getMessage());
             }
             int i = 1;
             for(String url : urlTweets){

@@ -101,7 +101,7 @@ public class HashTagSearch implements ITwitterSearch{
             return urls;
         } catch (IOException exception){
             log.error("JSON parsing failed",exception);
-            throw new RuntimeException("JSON parsing failed");
+            throw new IllegalArgumentException("JSON parsing failed");
         }
     }
 
@@ -130,7 +130,7 @@ public class HashTagSearch implements ITwitterSearch{
             return tweetCount;
         } catch (IOException exception){
             log.error("JSON parsing failed",exception);
-            throw new RuntimeException("JSON parsing failed");
+            throw new IllegalArgumentException("JSON parsing failed");
         }
             
     }
@@ -149,7 +149,7 @@ public class HashTagSearch implements ITwitterSearch{
             return response;
         } catch (HttpClientErrorException exception){
             log.warn("Twitter request failed",exception);
-            throw new RuntimeException("Twitter API not accepting request:"+exception.getMessage());
+            throw new IllegalStateException("Twitter API not accepting request:"+exception.getMessage());
         }
     } 
     
