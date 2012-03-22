@@ -15,9 +15,11 @@ import org.springframework.web.client.RestTemplate;
 public class HashTagSearch implements ITwitterSearch{
 
     private Logger log = LoggerFactory.getLogger(this.getClass());
-    
-    protected static final String TWITTER_URL ="http://search.twitter.com/search.json" +
-            "?q={q}&amp;rpp={rpp}&amp;result_type={result_type}&amp;include_entities={include_entities}&amp;page={page}";
+
+    protected static final String TWITTER_URL ="http://search.twitter.com/search.json";
+    protected static final String TWITTER_QUERY =
+            "?q={q}&amp;rpp={rpp}&amp;result_type={result_type}&amp;" +
+            "include_entities={include_entities}";
     private final String hashTag;
     private final int returnSize;
     private final RestTemplate restTemplate;
@@ -36,7 +38,9 @@ public class HashTagSearch implements ITwitterSearch{
     }
 
     private Set<String> findUrls(String thisPage, Set<String> existingUrls)   {
-        final String tweets = findTweetsWithHashTag(thisPage);
+        final String tweets = thisPage.equals("")
+                   ? findTweetsWithHashTag()
+                : findTweetsWithHashTag(thisPage);
         final int tweetCount = parseNumberOfTweetsFound(tweets);
         if( tweetCount > 0 ){
             if(log.isDebugEnabled()) log.debug("Tweet count: " + tweetCount);
@@ -92,8 +96,8 @@ public class HashTagSearch implements ITwitterSearch{
     
     protected Set<String> parseUrlsFromTweets(String tweets) {
         final Set<String> urls = new LinkedHashSet<String>();
-        final ObjectMapper mapper = new ObjectMapper();
         try {
+            final ObjectMapper mapper = new ObjectMapper();
             JsonNode treeNode = mapper.readTree(tweets);
             JsonNode resultsNode = treeNode.path("results");
             for( JsonNode tweetNode : resultsNode ){
@@ -108,56 +112,39 @@ public class HashTagSearch implements ITwitterSearch{
                     }
                 }
             }
-            return urls;
         } catch (IOException exception) {
             log.error("JSON parsing failed",exception);
             throw new IllegalArgumentException("JSON parsing failed");
         }
+        return urls;
     }
 
     protected int parseNumberOfTweetsFound(String tweets) {
         assert tweets.trim().length() > 0 : "no tweets";
+        int tweetCount = 0;
         try{
-            int tweetCount = 0;
-            final JsonParser jsonParser = new JsonFactory().createJsonParser(tweets);
-            jsonParser.nextToken();
-            while (jsonParser.nextToken() != JsonToken.END_OBJECT) {
-                final String fieldName = jsonParser.getCurrentName();
-                jsonParser.nextToken();
-                if ("results".equals(fieldName )) {
-                    while (jsonParser.nextToken() != JsonToken.END_ARRAY) {
-                        final String resultsField = jsonParser.getCurrentName();
-                        if ("from_user".equals(resultsField)) {
-                            tweetCount++;
-                            jsonParser.nextToken();
-                        } else {
-                            if( jsonParser.getParsingContext().inArray() ){
-                                jsonParser.skipChildren();
-                            }
-                        }
-                    }
-                }
+            final ObjectMapper mapper = new ObjectMapper();
+            JsonNode treeNode = mapper.readTree(tweets);
+            JsonNode resultsNode = treeNode.path("results");
+            for( JsonNode tweetNode : resultsNode ){
+                tweetCount++;
             }
-            jsonParser.close();
-            return tweetCount;
-        } catch (IOException exception){
+        } catch (IOException exception) {
             log.error("JSON parsing failed",exception);
             throw new IllegalArgumentException("JSON parsing failed");
         }
+        return tweetCount;
     }
-
     protected String findTweetsWithHashTag(){
         final Map<String, String> parameters = new HashMap<String, String>(){{
             put("q", hashTag);
-//            put("rpp", ""+returnSize);
             put("rpp", ""+50);
             put("result_type", "recent");
             put("include_entities","true");
-//            put("page",""+page);
         }};
         try{
-            final String response = restTemplate.getForObject(TWITTER_URL, String.class, parameters);
-            if(log.isDebugEnabled()) log.debug("Json returned: " + response);
+            final String response = restTemplate.getForObject(TWITTER_URL+TWITTER_QUERY, String.class, parameters);
+//            if(log.isDebugEnabled()) log.debug("Json returned: " + response);
             return response;
         } catch (HttpClientErrorException exception){
             log.warn("Twitter request failed: " + exception.getResponseBodyAsString());
@@ -169,6 +156,9 @@ public class HashTagSearch implements ITwitterSearch{
     protected String findTweetsWithHashTag(final String page){
         try{
             final String response = restTemplate.getForObject(TWITTER_URL+page, String.class);
+            if(response==null || response.equals("")){
+                throw new IllegalStateException("Twitter API did not respond properly");
+            }
             if(log.isDebugEnabled()) log.debug("Json returned: " + response);
             return response;
         } catch (HttpClientErrorException exception){

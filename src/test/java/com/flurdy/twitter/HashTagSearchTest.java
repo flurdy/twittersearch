@@ -1,6 +1,7 @@
 package com.flurdy.twitter;
 
 import org.junit.*;
+import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.client.RestTemplate;
@@ -29,7 +30,7 @@ public class HashTagSearchTest {
             "{\"from_user\":\"garrincha\",\"entities\":{\"urls\":[{\"expanded_url\":\"http://www.example.com/foobar\"}]},\"created_at\":\"2012-12-24\"}" +
             "]}";
 
-    @Test(timeout=1000)
+    @Test(timeout=3000)
     public void parseUrlsFromJson() throws IOException {
         Set<String> urls = new HashTagSearch("ford",5).parseUrlsFromTweets(tweets);
         assertEquals(5,urls.size());
@@ -40,13 +41,13 @@ public class HashTagSearchTest {
 
 
 
-    @Test(timeout=1000)
+    @Test(timeout=3000)
     public void testTweetsFound()  {
         int tweetCount = new HashTagSearch("ford",5).parseNumberOfTweetsFound(tweets);
         assertEquals(5,tweetCount);
     }
 
-    @Test(timeout=1000)
+    @Test(timeout=3000)
     public void testNoTweetsFound()  {
         String noTweets = "{\"results\":[]}";
         int tweetCount = new HashTagSearch("basketball",5).parseNumberOfTweetsFound(noTweets);
@@ -55,17 +56,21 @@ public class HashTagSearchTest {
 
 
 
-    @Test(timeout=1000)
+    @Test(timeout=3000)
 //    @Ignore
     public void retrieveUrlsFromMockedApi()  {
         RestTemplate restTemplate = mock(RestTemplate.class);
         when(restTemplate.getForObject(anyString(), any(Class.class), anyMap())).thenReturn(tweets);
+//        when(restTemplate.getForObject(anyString(), any(Class.class))).thenReturn(tweets);
         HashTagSearch hashTagSearch = new HashTagSearch(restTemplate,"football",5);
         Set<String> urls = hashTagSearch.searchForUrls();
         assertEquals(5,urls.size());
         for( String url : urls ){
             assertTrue(startsWithHttp(url));
         }
+        verify(restTemplate).getForObject(anyString(), any(Class.class), anyMap());
+//        verify(restTemplate).getForObject(anyString(), any(Class.class));
+        verifyNoMoreInteractions(restTemplate);
     }
 
     @Test(timeout=1000)
