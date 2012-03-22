@@ -3,10 +3,8 @@ package com.flurdy.twitter;
 import java.io.IOException;
 import java.util.*;
 
-import org.codehaus.jackson.JsonFactory;
-import org.codehaus.jackson.JsonParseException;
-import org.codehaus.jackson.JsonParser;
-import org.codehaus.jackson.JsonToken;
+import org.codehaus.jackson.*;
+import org.codehaus.jackson.map.ObjectMapper;
 import org.perf4j.LoggingStopWatch;
 import org.perf4j.StopWatch;
 import org.slf4j.Logger;
@@ -43,13 +41,20 @@ public class HashTagSearch implements ITwitterSearch{
         if( tweetCount > 0 ){
             if(log.isDebugEnabled()) log.debug("Tweet count: " + tweetCount);
             final Set<String> newUrls = parseUrlsFromTweets(tweets);
-            if(log.isDebugEnabled()) log.debug("Before existingUrls.size(): " + existingUrls.size());
-            existingUrls = addNewUrls(newUrls, existingUrls);
-            if(log.isDebugEnabled()) log.debug("After existingUrls.size(): " + existingUrls.size());
-            return existingUrls.size()<returnSize
+            if( !newUrls.isEmpty() ){
+                if(log.isDebugEnabled()) log.debug("Before existingUrls.size(): " + existingUrls.size());
+                if(log.isDebugEnabled()) log.debug("newUrls.size(): " + newUrls.size());
+                existingUrls = addNewUrls(newUrls, existingUrls);
+                if(log.isDebugEnabled()) log.debug("After existingUrls.size(): " + existingUrls.size());
+                return existingUrls.size()<returnSize
                     ? findUrls(page++,existingUrls)
-                    : existingUrls;   
+                    : existingUrls;
+            } else {
+                if(log.isDebugEnabled()) log.debug("No new URLS");
+                return existingUrls;
+            }
         } else {
+            if(log.isDebugEnabled()) log.debug("No tweets found");
             return existingUrls;
         }
     }
@@ -57,67 +62,40 @@ public class HashTagSearch implements ITwitterSearch{
 
     private Set<String> addNewUrls(Set<String> newUrls, Set<String> existingUrls) {
         for(String url : newUrls){
-            if(!existingUrls.contains(url)){
+            if(existingUrls.size()>=returnSize){
+                return existingUrls;
+            } else if(!existingUrls.contains(url) ){
                 existingUrls.add(url);
             }
         }
         return existingUrls;
     }
 
+
     protected Set<String> parseUrlsFromTweets(String tweets) {
-        try{
-//            StopWatch stopWatch = new LoggingStopWatch("parseUrlsFromTweets main");
-            final Set<String> urls = new LinkedHashSet<String>();
-            final JsonParser jsonParser = new JsonFactory().createJsonParser(tweets);
-              jsonParser.nextToken();
-                while (jsonParser.nextToken() != JsonToken.END_OBJECT) {
-                    final String fieldName = jsonParser.getCurrentName();
-                    jsonParser.nextToken();
-                    if ("results".equals(fieldName )) {
-                        while (jsonParser.nextToken() != JsonToken.END_ARRAY) {
-//                            jsonParser.nextToken();
-                            final String resultsField = jsonParser.getCurrentName();
-                            if ("entities".equals(resultsField)) {
-                                while (jsonParser.nextToken() != JsonToken.END_OBJECT  ) {
-                                    jsonParser.nextToken();
-                                    final String entityField = jsonParser.getCurrentName();
-                                    if ("urls".equals(entityField)) {
-                                        while (jsonParser.nextToken() != JsonToken.END_OBJECT) {
-                                            final String urlsField = jsonParser.getCurrentName();
-                                           jsonParser.nextToken();
-                                            if ("expanded_url".equals(urlsField)) {
-                                                final String url = jsonParser.getText();
-                                                if(!urls.contains(url)){
-                                                    urls.add(url);
-                                                }
-    //                                            if(log.isDebugEnabled()) log.debug("added url: " + url);
-                                            }
-                                        }
-                                    }  else {
-                                        if( jsonParser.getParsingContext().inArray() ){
-                                            jsonParser.skipChildren();
-                                        }
-                                    }
-                                }
-                            } else {
-//                                log.debug("jsonParser.getCurrentName(): "+jsonParser.getCurrentName());
-//                                log.debug("jsonParser.getText(): "+jsonParser.getText());
-                                if( jsonParser.getParsingContext().inArray() ){
-                                    jsonParser.skipChildren();
-                                }
-                            }
-                        }
+        final Set<String> urls = new LinkedHashSet<String>();
+        final ObjectMapper mapper = new ObjectMapper();
+        try {
+            JsonNode treeNode = mapper.readTree(tweets);
+            JsonNode resultsNode = treeNode.path("results");
+            for( JsonNode tweetNode : resultsNode ){
+                JsonNode entitiesNode = tweetNode.path("entities");
+                JsonNode urlsNode = entitiesNode.path("urls");
+                for( JsonNode urlNode : urlsNode ){
+                    JsonNode expandedNode = urlNode.path("expanded_url");
+                    final String url = expandedNode.getTextValue();
+                    if(!urls.contains(url)){
+                        urls.add(url);
+//                        if(log.isDebugEnabled()) log.debug("added url: " + url);
                     }
                 }
-                jsonParser.close();
-//                stopWatch.stop();
+            }
             return urls;
-        } catch (IOException exception){
+        } catch (IOException exception) {
             log.error("JSON parsing failed",exception);
             throw new IllegalArgumentException("JSON parsing failed");
         }
     }
-
 
     protected int parseNumberOfTweetsFound(String tweets) {
         try{
@@ -138,11 +116,7 @@ public class HashTagSearch implements ITwitterSearch{
                                 jsonParser.skipChildren();
                             }
                         }
-//                        log.debug("Count: "+ tweetCount);
                     }
-//                } else {
-//                    log.debug("jsonParser.getCurrentName(): "+jsonParser.getCurrentName());
-//                    log.debug("jsonParser.getText(): "+jsonParser.getText());
                 }
             }
             jsonParser.close();
@@ -156,7 +130,8 @@ public class HashTagSearch implements ITwitterSearch{
     protected String findTweetsWithHashTag(final int page){
         final Map<String, String> parameters = new HashMap<String, String>(){{
             put("q", hashTag);
-            put("rpp", ""+returnSize);
+//            put("rpp", ""+returnSize);
+            put("rpp", ""+50);
             put("result_type", "recent");
             put("include_entities","true");
             put("page",""+page);

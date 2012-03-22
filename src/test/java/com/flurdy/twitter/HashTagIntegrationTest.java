@@ -57,14 +57,12 @@ public class HashTagIntegrationTest  {
         }};
         try{
             final String response = restTemplate.getForObject(TWITTER_URL, String.class, parameters);
-            if(log.isDebugEnabled()) log.debug("Json returned: " + response);
+//            if(log.isDebugEnabled()) log.debug("Json returned: " + response);
             int tweetCount = new HashTagSearch("football",10).parseNumberOfTweetsFound(response);
             assertEquals(10,tweetCount);
         } catch (HttpClientErrorException exception){
             log.warn(exception.getMessage());
             log.warn(exception.getResponseBodyAsString());
-//            log.warn("Twitter request failed",exception);
-//            throw exception;
             fail(exception.getMessage());
         }
     }
