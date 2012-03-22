@@ -43,22 +43,18 @@ public class HashTagSearch implements ITwitterSearch{
                 : findTweetsWithHashTag(thisPage);
         final int tweetCount = parseNumberOfTweetsFound(tweets);
         if( tweetCount > 0 ){
-            if(log.isDebugEnabled()) log.debug("Tweet count: " + tweetCount);
             final Set<String> newUrls = parseUrlsFromTweets(tweets);
             if( !newUrls.isEmpty() ){
-                if(log.isDebugEnabled()) log.debug("Before existingUrls.size(): " + existingUrls.size());
-                if(log.isDebugEnabled()) log.debug("newUrls.size(): " + newUrls.size());
                 existingUrls = addNewUrls(newUrls, existingUrls);
-                if(log.isDebugEnabled()) log.debug("After existingUrls.size(): " + existingUrls.size());
                 if( existingUrls.size()<returnSize ) {
                     final String nextPage = parseNextPage(tweets);
                     existingUrls = findUrls(nextPage,existingUrls);
                 }
-            } else {
-                if(log.isDebugEnabled()) log.debug("No new URLS");
+//            } else {
+//                if(log.isDebugEnabled()) log.debug("No new URLS");
             }
-        } else {
-            if(log.isDebugEnabled()) log.debug("No tweets found");
+//        } else {
+//            if(log.isDebugEnabled()) log.debug("No tweets found");
         }
         return existingUrls;
     }
@@ -75,7 +71,6 @@ public class HashTagSearch implements ITwitterSearch{
                 matchCount++;
             }
         }
-        log.debug("Matches: "+matchCount);
         return existingUrls;
     }
 
@@ -159,7 +154,7 @@ public class HashTagSearch implements ITwitterSearch{
             if(response==null || response.equals("")){
                 throw new IllegalStateException("Twitter API did not respond properly");
             }
-            if(log.isDebugEnabled()) log.debug("Json returned: " + response);
+//            if(log.isDebugEnabled()) log.debug("Json returned: " + response);
             return response;
         } catch (HttpClientErrorException exception){
             log.warn("Twitter request failed: " + exception.getResponseBodyAsString());
