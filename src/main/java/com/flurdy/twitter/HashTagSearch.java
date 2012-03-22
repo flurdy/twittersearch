@@ -32,11 +32,11 @@ public class HashTagSearch implements ITwitterSearch{
     }
 
     public Set<String> searchForUrls()  {
-        return findUrls(1,new LinkedHashSet<String>());
+        return findUrls("",new LinkedHashSet<String>());
     }
 
-    private Set<String> findUrls(int page,Set<String> existingUrls)   {
-        final String tweets = findTweetsWithHashTag(page);
+    private Set<String> findUrls(String thisPage, Set<String> existingUrls)   {
+        final String tweets = findTweetsWithHashTag(thisPage);
         final int tweetCount = parseNumberOfTweetsFound(tweets);
         if( tweetCount > 0 ){
             if(log.isDebugEnabled()) log.debug("Tweet count: " + tweetCount);
@@ -46,32 +46,50 @@ public class HashTagSearch implements ITwitterSearch{
                 if(log.isDebugEnabled()) log.debug("newUrls.size(): " + newUrls.size());
                 existingUrls = addNewUrls(newUrls, existingUrls);
                 if(log.isDebugEnabled()) log.debug("After existingUrls.size(): " + existingUrls.size());
-                return existingUrls.size()<returnSize
-                    ? findUrls(page++,existingUrls)
-                    : existingUrls;
+                if( existingUrls.size()<returnSize ) {
+                    final String nextPage = parseNextPage(tweets);
+                    existingUrls = findUrls(nextPage,existingUrls);
+                }
             } else {
                 if(log.isDebugEnabled()) log.debug("No new URLS");
-                return existingUrls;
             }
         } else {
             if(log.isDebugEnabled()) log.debug("No tweets found");
-            return existingUrls;
-        }
-    }
-
-
-    private Set<String> addNewUrls(Set<String> newUrls, Set<String> existingUrls) {
-        for(String url : newUrls){
-            if(existingUrls.size()>=returnSize){
-                return existingUrls;
-            } else if(!existingUrls.contains(url) ){
-                existingUrls.add(url);
-            }
         }
         return existingUrls;
     }
 
 
+    private Set<String> addNewUrls(Set<String> newUrls, Set<String> existingUrls) {
+        int matchCount = 0;
+        for(String url : newUrls){
+            if(existingUrls.size()>=returnSize){
+                return existingUrls;
+            } else if(!existingUrls.contains(url) ){
+                existingUrls.add(url);
+            } else {
+                matchCount++;
+            }
+        }
+        log.debug("Matches: "+matchCount);
+        return existingUrls;
+    }
+
+
+
+    private String parseNextPage(String tweets) {
+        final Set<String> urls = new LinkedHashSet<String>();
+        final ObjectMapper mapper = new ObjectMapper();
+        try {
+            JsonNode treeNode = mapper.readTree(tweets);
+            JsonNode pageNode = treeNode.path("next_page");
+            return pageNode.getTextValue();
+        } catch (IOException exception) {
+            log.error("JSON parsing failed",exception);
+            throw new IllegalArgumentException("JSON parsing failed");
+        }
+    }
+    
     protected Set<String> parseUrlsFromTweets(String tweets) {
         final Set<String> urls = new LinkedHashSet<String>();
         final ObjectMapper mapper = new ObjectMapper();
@@ -98,6 +116,7 @@ public class HashTagSearch implements ITwitterSearch{
     }
 
     protected int parseNumberOfTweetsFound(String tweets) {
+        assert tweets.trim().length() > 0 : "no tweets";
         try{
             int tweetCount = 0;
             final JsonParser jsonParser = new JsonFactory().createJsonParser(tweets);
@@ -127,14 +146,14 @@ public class HashTagSearch implements ITwitterSearch{
         }
     }
 
-    protected String findTweetsWithHashTag(final int page){
+    protected String findTweetsWithHashTag(){
         final Map<String, String> parameters = new HashMap<String, String>(){{
             put("q", hashTag);
 //            put("rpp", ""+returnSize);
             put("rpp", ""+50);
             put("result_type", "recent");
             put("include_entities","true");
-            put("page",""+page);
+//            put("page",""+page);
         }};
         try{
             final String response = restTemplate.getForObject(TWITTER_URL, String.class, parameters);
@@ -144,7 +163,19 @@ public class HashTagSearch implements ITwitterSearch{
             log.warn("Twitter request failed: " + exception.getResponseBodyAsString());
             throw new IllegalStateException("Twitter API not accepting request:"+exception.getMessage());
         }
-    } 
-    
+    }
+
+
+    protected String findTweetsWithHashTag(final String page){
+        try{
+            final String response = restTemplate.getForObject(TWITTER_URL+page, String.class);
+            if(log.isDebugEnabled()) log.debug("Json returned: " + response);
+            return response;
+        } catch (HttpClientErrorException exception){
+            log.warn("Twitter request failed: " + exception.getResponseBodyAsString());
+            throw new IllegalStateException("Twitter API not accepting request:"+exception.getMessage());
+        }
+    }
+
 
 }

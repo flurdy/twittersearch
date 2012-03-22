@@ -23,8 +23,8 @@ public class HashTagSearchTest {
 
     private final String tweets = "{\n\"results\":[\n" +
             "{\"from_user\":\"leonidas\",\"entities\":{\"urls\":[{\"expanded_url\":\"http://www.example.com\"}]}}," +
-            "{\"from_user\":\"zico\",\"entities\":{\"urls\":[{\"url\":\"http://www.example.org\",\"expanded_url\":\"http://www.example.org\"}]}}," +
             "{\"from_user\":\"socrates\",\"entities\":{\"urls\":[{\"expanded_url\":\"http://www.example.net\",\"display_url\":\"http://www.example.net\"}]},\"created_at\":\"2012-12-24\"}," +
+            "{\"from_user\":\"zico\",\"entities\":{\"urls\":[{\"expanded_url\":\"http://www.example.org\"}]}}," +
             "{\"from_user\":\"rivelino\",\"entities\":{\"urls\":[{\"expanded_url\":\"http://www.example.com/blah\"}]}}," +
             "{\"from_user\":\"garrincha\",\"entities\":{\"urls\":[{\"expanded_url\":\"http://www.example.com/foobar\"}]},\"created_at\":\"2012-12-24\"}" +
             "]}";
@@ -73,7 +73,7 @@ public class HashTagSearchTest {
         RestTemplate restTemplate = mock(RestTemplate.class);
         when(restTemplate.getForObject(anyString(), any(Class.class), anyMap())).thenReturn(tweets);
         HashTagSearch hashTagSearch = new HashTagSearch(restTemplate,"football",5);
-        String json = hashTagSearch.findTweetsWithHashTag(1);
+        String json = hashTagSearch.findTweetsWithHashTag();
         Set<String> urls = hashTagSearch.parseUrlsFromTweets(json);
         assertEquals(5,urls.size());
         for( String url : urls ){
